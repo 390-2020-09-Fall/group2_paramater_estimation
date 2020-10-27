@@ -1,0 +1,168 @@
+```{r setup, include=FALSE}
+# Set default behavior for all code chunks here:
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  message = FALSE, 
+  warning = FALSE, 
+  fig.width = 16/2, 
+  fig.height = 9/2
+)
+
+# Run this command only once to install my forestecology package, specifically
+# the "SCBI" branch:
+# devtools::install_github("rudeboybert/forestecology", ref = "SCBI")
+
+# Load all your used packages here:
+library(tidyverse)
+library(broom)
+library(moderndive)
+library(patchwork)
+library(forestecology)
+library(sf)
+library(knitr)
+
+# Set seed value of random number generator here:
+set.seed(76)
+```
+
+
+# Part 2: Interspecies Competition
+
+```{r, echo = FALSE, out.width="60%", fig.align="center"}
+include_graphics("https://rudeboybert.github.io/SDS390/static/images/competition_neighborhood.png")
+```
+
+```{r}
+# Compute growth ---------------------------------------------------------------
+# Load 2008 census data and join additional species data
+census_2008 <- bw_census_2008 %>%
+  left_join(bw_species, by = "sp")
+
+# Load 2014 census data and filter out resprouts
+census_2014 <- bw_census_2014 %>%
+  filter(!str_detect(codes, "R"))
+
+bw_growth <-
+  # Merge both censuses and compute growth:
+  compute_growth(census_2008, census_2014, id = "treeID") %>%
+  # Convert data frame to sf object
+  st_as_sf(coords = c("gx", "gy")) %>%
+  # Clean variables
+  select(ID = treeID, species = trait_group, growth, geometry)
+```
+
+Plot all trees in Michigan Big Woods plot:
+
+```{r}
+ggplot(data = bw_growth) +
+  geom_sf(aes(col = species), size = 0.5) +
+  labs(title = "All trees in Michigan Big Woods site")
+```
+
+Plot all the trees (??)
+
+```{r}
+ggplot(data = bw_growth %>% filter(species == "maple")) +
+  geom_sf(aes(col = species), size = 0.5)+
+  labs(title = "All maple trees in Michigan Big Woods site")
+
+ggplot(data = bw_growth %>% filter(species == "evergreen")) +
+  geom_sf(aes(col = species), size = 0.5)+
+  labs(title = "All maple trees in Michigan Big Woods site")
+
+ggplot(data = bw_growth %>% filter(species == "oak")) +
+  geom_sf(aes(col = species), size = 0.5)+
+  labs(title = "All maple trees in Michigan Big Woods site")
+
+ggplot(data = bw_growth %>% filter(species == "short_tree")) +
+  geom_sf(aes(col = species), size = 0.5)+
+  labs(title = "All maple trees in Michigan Big Woods site")
+
+ggplot(data = bw_growth %>% filter(species == "shrub")) +
+  geom_sf(aes(col = species), size = 0.5)+
+  labs(title = "All maple trees in Michigan Big Woods site")
+```
+
+Use `bw_growth`, we have dbh for all trees
+Use this to calculate AGB of them: 
+```{r}
+# install.packages("remotes")
+# remotes::install_github("forestgeo/allodb")
+library(allodb)
+
+hemlocks$agb <- get_biomass(
+  dbh = hemlocks$diameter,
+  genus = hemlocks$genus,
+  species = hemlocks$species,
+  coords = c(-72.645, 42.318)
+)
+
+# mutate row for AGB
+# do the same thing we did for maple below 
+```
+
+
+```{r}
+maples <- read_csv("https://rudeboybert.github.io/SDS390/static/data/maples.csv")
+```
+Model loos like this:
+$$
+\begin{eqnarray*}
+y &=& \beta_0 + \beta_{\text{dbh}}\cdot \text{dbh} + \beta_{\text{evergreen_bm}}\cdot \text{evergreen_bm} + \beta_{\text{maple_bm}}\cdot \text{maple_bm} + \beta_{\text{misc_bm}}\cdot \text{misc_bm}\\
+&& + \beta_{\text{oak}}\cdot \text{oak} + \beta_{\text{short_tree}}\cdot \text{short_tree} + \beta_{\text{shrub}}\cdot \text{shrub} + \epsilon
+\end{eqnarray*}
+$$
+
+where 
+
+1. $\text{dbh}$ is the "starting" DBH in 2008
+1. $\text{bm}$ is "biomass" as estimated by the [basal area](https://en.wikipedia.org/wiki/Basal_area). 
+
+
+### Show the models 
+```{r}
+model_maple <- lm(growth ~ dbh + evergreen + maple + misc + oak + short_tree + shrub, data = maples)
+```
+
+`model_maple` can be written as:
+$$
+\begin{eqnarray*}
+y &=& .120157747 + .008636484\cdot \text{dbh} -0.691935999\cdot \text{evergreen_bm} + .079657822\cdot \text{maple_bm} -2.402421803\cdot \text{misc_bm}\\
+&& -0.115779874\cdot \text{oak} + .648948573\cdot \text{short_tree} + 2.506065233\cdot \text{shrub} + \epsilon
+\end{eqnarray*}
+$$
+Residual analysis 
+Look at model significance 
+
+## What factors influence growth? (maybe later)
+
+After you've selected the model, describe the relationship between $y$ = growth and $\text{dbh}$ and $\text{biomass}$, showing all your work:
+
+### In `model2`:
+$$
+\begin{eqnarray*}
+y &=& .120157747 + .008636484\cdot \text{dbh} -0.691935999\cdot \text{evergreen_bm} + .079657822\cdot \text{maple_bm} -2.402421803\cdot \text{misc_bm}\\
+&& -0.115779874\cdot \text{oak} + .648948573\cdot \text{short_tree} + 2.506065233\cdot \text{shrub} + \epsilon
+\end{eqnarray*}
+$$
+
+Looking at both `p-value` and the $95%$ confidence intervals:
+```{r}
+tidy(model2)
+confint(model2)
+```   
+They `p-value` for all parameters, except for `misc`, is smaller than $.05$. Correspondingly, the $95$ CI for all the parameters except for `misc` do not include $0$. This means that we fail to reject the null hypothesis that these parameters have no influence on growth, ie., `dbh`, `evergreen`, `maple`, `oak`, `short_tree`, and `shrub` all influence growth. 
+
+The relationships between each parameter and the growth of maples are:
+
+- Ceteris paribus, for every $1$ cm increase in the `dbh`, the growth of maple is expected to increase, on average, $.00825222$ cm. 
+
+- Ceteris paribus, for every $1$ cm increase in the bm of `evergreen`, the growth of maple is expected to decrease, on average, $1.2442846$ cm.  
+
+- Ceteris paribus, for every $1$ cm increase in the bm of `maple`, the growth of maple is expected to increase, on average, $.05256888$ cm.  
+
+- Ceteris paribus, for every $1$ cm increase in the bm of `oak`, the growth of maple is expected to increase, on average, $.12821961$ cm.  
+
+- Ceteris paribus, for every $1$ cm increase in the bm of `short tree`, the growth of maple is expected to increase, on average, $.05865004$ cm. 
+
+- Ceteris paribus, for every $1$ cm increase in the bm of `shrub`, the growth of maple is expected to increase, on average, $2.03112291$ cm. 
