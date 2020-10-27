@@ -10,7 +10,7 @@ knitr::opts_chunk$set(
 
 # Run this command only once to install my forestecology package, specifically
 # the "SCBI" branch:
-devtools::install_github("rudeboybert/forestecology", ref = "SCBI")
+# devtools::install_github("rudeboybert/forestecology)
 
 # Load all your used packages here:
 library(tidyverse)
@@ -129,6 +129,7 @@ focal_vs_comp_scbi_wide <- focal_vs_comp_scbi %>%
   summarize(comp_basal_area = sum(comp_basal_area)) %>% 
   pivot_wider(names_from = comp_sp, values_from = comp_basal_area, values_fill = 0)
 
+head(focal_vs_comp_scbi_wide)
 # write_csv(focal_vs_comp_scbi_wide, "data/focal_vs_comp_scbi_wide.csv")
 ```
 
