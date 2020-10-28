@@ -10,7 +10,7 @@ knitr::opts_chunk$set(
 
 # Run this command only once to install my forestecology package, specifically
 # the "SCBI" branch:
-# devtools::install_github("rudeboybert/forestecology", ref = "SCBI")
+# devtools::install_github("rudeboybert/forestecology)
 
 # Load all your used packages here:
 library(tidyverse)
@@ -48,15 +48,98 @@ bw_growth <-
   # Convert data frame to sf object
   st_as_sf(coords = c("gx", "gy")) %>%
   # Clean variables
-  select(ID = treeID, species = trait_group, growth, geometry)
+  select(ID = treeID, species = trait_group, genus, dbh = dbh2, growth, geometry)
 ```
 
-Plot all trees in Michigan Big Woods plot:
+## SCBI Data
 
 ```{r}
-ggplot(data = bw_growth) +
-  geom_sf(aes(col = species), size = 0.5) +
-  labs(title = "All trees in Michigan Big Woods site")
+# From forestecology package vignette
+# devtools::install_github("rvalavi/blockCV")
+library(blockCV)
+library(sfheaders)
+
+scbi_2013 <- read.csv("data/scbi.stem2.csv") %>% 
+  select(treeID, stemID, sp, quadrat, gx, gy, dbh, date = ExactDate, codes, status) %>%
+  mutate(date = lubridate::mdy(date)) %>%
+  filter(gx < 300, gy > 300, gy < 600)
+
+scbi_2018 <- read.csv("data/scbi.stem3.csv") %>% 
+  select(treeID, stemID, sp, quadrat, gx, gy, dbh, date = ExactDate, codes, status) %>%
+  mutate(date = lubridate::mdy(date),
+         dbh = as.numeric(dbh)) %>%
+  filter(gx < 300, gy > 300, gy < 600)
+
+census_df1 <- scbi_2013 
+census_df2 <- scbi_2018
+id <- "stemID"
+
+scbi_growth_df <- 
+  # Merge both censuses and compute growth:
+  compute_growth(census_df1, census_df2, id) %>%
+  # Convert growth from cm to mm to make result comperable
+  mutate(growth = growth/10,
+             sp = as.factor(sp))
+```
+
+```{r}
+# Add spatial information
+cv_fold_size <- 100
+max_dist <- 7.5
+
+scbi_study_region <- 
+ #tibble(x = c(0,400,400,0,0), y = c(0,0,640,640,0)) %>% 
+  tibble(x = c(0,300,300,0,0), y = c(300,300,600,600,3)) %>% 
+  sfc_polygon()
+
+# Add buffer variable to data frame
+scbi_growth_df <- scbi_growth_df %>%
+  add_buffer_variable(direction = "in", size = max_dist, region = scbi_study_region)
+
+scbi_cv_grid <- spatialBlock(
+  speciesData = scbi_growth_df, theRange = 100, yOffset = 0.9999, k = 9, verbose = FALSE)
+
+# Add foldID to data
+scbi_growth_df <- scbi_growth_df %>% 
+  mutate(
+    foldID = scbi_cv_grid$foldID
+  )
+
+# Visualize grid
+scbi_cv_grid$plots +
+  geom_sf(data = scbi_growth_df, aes(col=factor(foldID)), size = 0.1)
+
+scbi_cv_grid_sf <- scbi_cv_grid$blocks %>%
+  st_as_sf()
+```
+
+# Create focal vs. competitor data
+```{r}
+focal_vs_comp_scbi <- scbi_growth_df %>% 
+  create_focal_vs_comp(max_dist, cv_grid_sf = scbi_cv_grid_sf, id = "stemID")
+```
+
+# Spread into wide form for modeling (note: should we do this by genus?)
+
+```{r}
+metadata <- read_csv("data/scbi.spptable.csv")
+
+focal_vs_comp_scbi_wide <- focal_vs_comp_scbi %>% 
+  group_by(focal_ID, focal_sp, dbh, foldID, growth, comp_sp) %>%
+  summarize(comp_basal_area = sum(comp_basal_area)) %>% 
+  pivot_wider(names_from = comp_sp, values_from = comp_basal_area, values_fill = 0)
+
+head(focal_vs_comp_scbi_wide)
+# write_csv(focal_vs_comp_scbi_wide, "data/focal_vs_comp_scbi_wide.csv")
+```
+
+
+Plot all trees in SCBI plot:
+
+```{r}
+ggplot(data = scbi_growth_df) +
+  geom_sf(aes(col = sp), size = 0.5) +
+  labs(title = "All trees in SCBI site")
 ```
 
 Plot all the trees (??)
@@ -83,23 +166,6 @@ ggplot(data = bw_growth %>% filter(species == "shrub")) +
   labs(title = "All maple trees in Michigan Big Woods site")
 ```
 
-Use `bw_growth`, we have dbh for all trees
-Use this to calculate AGB of them: 
-```{r}
-# install.packages("remotes")
-# remotes::install_github("forestgeo/allodb")
-library(allodb)
-
-hemlocks$agb <- get_biomass(
-  dbh = hemlocks$diameter,
-  genus = hemlocks$genus,
-  species = hemlocks$species,
-  coords = c(-72.645, 42.318)
-)
-
-# mutate row for AGB
-# do the same thing we did for maple below 
-```
 
 
 ```{r}
