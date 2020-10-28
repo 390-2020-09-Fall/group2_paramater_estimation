@@ -145,25 +145,13 @@ ggplot(data = scbi_growth_df) +
 Plot all the trees (??)
 
 ```{r}
-ggplot(data = bw_growth %>% filter(species == "maple")) +
-  geom_sf(aes(col = species), size = 0.5)+
-  labs(title = "All maple trees in Michigan Big Woods site")
+ggplot(data = scbi_growth_df %>% filter(sp == "nysy")) +
+  geom_sf(aes(col = sp), size = 0.5)+
+  labs(title = "All Nyssa sylvatica trees in Michigan Big Woods site")
 
-ggplot(data = bw_growth %>% filter(species == "evergreen")) +
-  geom_sf(aes(col = species), size = 0.5)+
-  labs(title = "All maple trees in Michigan Big Woods site")
-
-ggplot(data = bw_growth %>% filter(species == "oak")) +
-  geom_sf(aes(col = species), size = 0.5)+
-  labs(title = "All maple trees in Michigan Big Woods site")
-
-ggplot(data = bw_growth %>% filter(species == "short_tree")) +
-  geom_sf(aes(col = species), size = 0.5)+
-  labs(title = "All maple trees in Michigan Big Woods site")
-
-ggplot(data = bw_growth %>% filter(species == "shrub")) +
-  geom_sf(aes(col = species), size = 0.5)+
-  labs(title = "All maple trees in Michigan Big Woods site")
+ggplot(data = scbi_growth_df %>% filter(sp == "astr")) +
+  geom_sf(aes(col = sp), size = 0.5)+
+  labs(title = "All Asimina triloba trees in Michigan Big Woods site")
 ```
 
 
