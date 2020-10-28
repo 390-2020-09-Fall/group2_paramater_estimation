@@ -211,24 +211,3 @@ y &=& .120157747 + .008636484\cdot \text{dbh} -0.691935999\cdot \text{evergreen_
 && -0.115779874\cdot \text{oak} + .648948573\cdot \text{short_tree} + 2.506065233\cdot \text{shrub} + \epsilon
 \end{eqnarray*}
 $$
-
-Looking at both `p-value` and the $95%$ confidence intervals:
-```{r}
-tidy(model2)
-confint(model2)
-```   
-They `p-value` for all parameters, except for `misc`, is smaller than $.05$. Correspondingly, the $95$ CI for all the parameters except for `misc` do not include $0$. This means that we fail to reject the null hypothesis that these parameters have no influence on growth, ie., `dbh`, `evergreen`, `maple`, `oak`, `short_tree`, and `shrub` all influence growth. 
-
-The relationships between each parameter and the growth of maples are:
-
-- Ceteris paribus, for every $1$ cm increase in the `dbh`, the growth of maple is expected to increase, on average, $.00825222$ cm. 
-
-- Ceteris paribus, for every $1$ cm increase in the bm of `evergreen`, the growth of maple is expected to decrease, on average, $1.2442846$ cm.  
-
-- Ceteris paribus, for every $1$ cm increase in the bm of `maple`, the growth of maple is expected to increase, on average, $.05256888$ cm.  
-
-- Ceteris paribus, for every $1$ cm increase in the bm of `oak`, the growth of maple is expected to increase, on average, $.12821961$ cm.  
-
-- Ceteris paribus, for every $1$ cm increase in the bm of `short tree`, the growth of maple is expected to increase, on average, $.05865004$ cm. 
-
-- Ceteris paribus, for every $1$ cm increase in the bm of `shrub`, the growth of maple is expected to increase, on average, $2.03112291$ cm. 
