@@ -25,36 +25,10 @@ library(knitr)
 set.seed(76)
 ```
 
-
-# Part 2: Interspecies Competition
-
-```{r, echo = FALSE, out.width="60%", fig.align="center"}
-include_graphics("https://rudeboybert.github.io/SDS390/static/images/competition_neighborhood.png")
-```
-
-```{r}
-# Compute growth ---------------------------------------------------------------
-# Load 2008 census data and join additional species data
-census_2008 <- bw_census_2008 %>%
-  left_join(bw_species, by = "sp")
-
-# Load 2014 census data and filter out resprouts
-census_2014 <- bw_census_2014 %>%
-  filter(!str_detect(codes, "R"))
-
-bw_growth <-
-  # Merge both censuses and compute growth:
-  compute_growth(census_2008, census_2014, id = "treeID") %>%
-  # Convert data frame to sf object
-  st_as_sf(coords = c("gx", "gy")) %>%
-  # Clean variables
-  select(ID = treeID, species = trait_group, genus, dbh = dbh2, growth, geometry)
-```
-
 ## SCBI Data
 
 ```{r}
-# From forestecology package vignette
+# From forestecology package
 # devtools::install_github("rvalavi/blockCV")
 library(blockCV)
 library(sfheaders)
