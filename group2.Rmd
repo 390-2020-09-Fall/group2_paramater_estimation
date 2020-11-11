@@ -48,12 +48,15 @@ census_df1 <- scbi_2013
 census_df2 <- scbi_2018
 id <- "stemID"
 
+spptable <- read.csv("data/scbi.spptable.csv")
+
 scbi_growth_df <- 
   # Merge both censuses and compute growth:
   compute_growth(census_df1, census_df2, id) %>%
   # Convert growth from cm to mm to make result comperable
   mutate(growth = growth/10,
-             sp = as.factor(sp))
+             sp = as.factor(sp)) %>% 
+  inner_join(spptable, by = "sp")
 ```
 
 ```{r}
@@ -113,6 +116,18 @@ Plot all trees in SCBI plot:
 ```{r}
 ggplot(data = scbi_growth_df) +
   geom_sf(aes(col = sp), size = 0.5) +
+  labs(title = "All trees in SCBI site")
+
+ggplot(data = scbi_growth_df) +
+  geom_sf(aes(col = Genus), size = 0.5) +
+  labs(title = "All trees in SCBI site")
+
+ggplot(data = scbi_growth_df) +
+  geom_sf(aes(col = Family), size = 0.5) +
+  labs(title = "All trees in SCBI site")
+
+ggplot(data = scbi_growth_df) +
+  geom_sf(aes(col = group), size = 0.5) +
   labs(title = "All trees in SCBI site")
 ```
 
