@@ -192,31 +192,3 @@ where
 
 1. $\text{dbh}$ is the "starting" DBH in 2008
 1. $\text{bm}$ is "biomass" as estimated by the [basal area](https://en.wikipedia.org/wiki/Basal_area). 
-
-
-### Show the models 
-```{r}
-model_maple <- lm(growth ~ dbh + evergreen + maple + misc + oak + short_tree + shrub, data = maples)
-```
-
-`model_maple` can be written as:
-$$
-\begin{eqnarray*}
-y &=& .120157747 + .008636484\cdot \text{dbh} -0.691935999\cdot \text{evergreen_bm} + .079657822\cdot \text{maple_bm} -2.402421803\cdot \text{misc_bm}\\
-&& -0.115779874\cdot \text{oak} + .648948573\cdot \text{short_tree} + 2.506065233\cdot \text{shrub} + \epsilon
-\end{eqnarray*}
-$$
-Residual analysis 
-Look at model significance 
-
-## What factors influence growth? (maybe later)
-
-After you've selected the model, describe the relationship between $y$ = growth and $\text{dbh}$ and $\text{biomass}$, showing all your work:
-
-### In `model2`:
-$$
-\begin{eqnarray*}
-y &=& .120157747 + .008636484\cdot \text{dbh} -0.691935999\cdot \text{evergreen_bm} + .079657822\cdot \text{maple_bm} -2.402421803\cdot \text{misc_bm}\\
-&& -0.115779874\cdot \text{oak} + .648948573\cdot \text{short_tree} + 2.506065233\cdot \text{shrub} + \epsilon
-\end{eqnarray*}
-$$
