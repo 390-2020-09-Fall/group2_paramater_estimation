@@ -48,15 +48,22 @@ census_df1 <- scbi_2013
 census_df2 <- scbi_2018
 id <- "stemID"
 
-spptable <- read.csv("data/scbi.spptable.csv")
+cluster_names <- data.frame(group = c(1:7), group_name = c("high_sla", "low_sla", "shrubs", "tall_light_wood", "evergreens", "oaks", "other"), group_alias = c("High SLA trees", "Low SLA trees", "Shrubs", "Tall trees - Light wood", "Evergreens", "Oaks", "Other"))
+
+spptable <- read_csv("data/scbi.spptable.csv") %>% 
+  left_join(cluster_names, by = "group") %>% 
+  mutate(group = ifelse(is.na(group), 7, group),
+         group_name = ifelse(group == 7, "other", group_name),
+         group_alias = ifelse(group == 7, "Other", group_alias))
 
 scbi_growth_df <- 
   # Merge both censuses and compute growth:
   compute_growth(census_df1, census_df2, id) %>%
-  # Convert growth from cm to mm to make result comperable
+  # Convert growth from cm to mm to make result comparable
   mutate(growth = growth/10,
              sp = as.factor(sp)) %>% 
-  inner_join(spptable, by = "sp")
+  inner_join(spptable, by = "sp") %>% 
+  filter(status == "A")
 ```
 
 ```{r}
@@ -94,26 +101,51 @@ scbi_cv_grid_sf <- scbi_cv_grid$blocks %>%
 ```{r}
 focal_vs_comp_scbi <- scbi_growth_df %>% 
   create_focal_vs_comp(max_dist, cv_grid_sf = scbi_cv_grid_sf, id = "stemID")
+
+focal_vs_comp_scbi <- focal_vs_comp_scbi %>% 
+  left_join(select(spptable, sp, focal_group = group_name), by = c("focal_sp" = "sp")) %>% 
+  left_join(select(spptable, sp, comp_group = group_name), by = c("comp_sp" = "sp"))
+
 ```
 
 # Spread into wide form for modeling (note: should we do this by genus?)
 
 ```{r}
-metadata <- read_csv("data/scbi.spptable.csv")
-
 focal_vs_comp_scbi_wide <- focal_vs_comp_scbi %>% 
-  group_by(focal_ID, focal_sp, dbh, foldID, growth, comp_sp) %>%
+  group_by(focal_ID, focal_group, dbh, foldID, growth, comp_group) %>%
   summarize(comp_basal_area = sum(comp_basal_area)) %>% 
-  pivot_wider(names_from = comp_sp, values_from = comp_basal_area, values_fill = 0)
+  pivot_wider(names_from = comp_group, values_from = comp_basal_area, values_fill = 0)
 
+group_order <- focal_vs_comp_scbi_wide %>% 
+  ungroup() %>% 
+  filter(focal_group != "other") %>% 
+  count(focal_group, sort = T)
+
+# set factor order by largest group
+focal_vs_comp_scbi_wide <- focal_vs_comp_scbi_wide %>% 
+  mutate(focal_group = factor(focal_group, levels = c(as.character(group_order$focal_group), "other")))
 head(focal_vs_comp_scbi_wide)
 # write_csv(focal_vs_comp_scbi_wide, "data/focal_vs_comp_scbi_wide.csv")
 ```
 
+# Model
+
+```{r}
+model <- lm(growth ~ dbh + focal_group + high_sla + low_sla + tall_light_wood + evergreens + oaks + shrubs + other, data = focal_vs_comp_scbi_wide)
+
+summary(model)
+```
+$$
+y = \beta_0 + \beta_1d_f + \beta_2g_f + \sum_{g=1}^G \beta_{g}m_g + \varepsilon \\
+\text{ where } d_f \text{ is the diameter at breast height of the focal tree, } g_f \text{ is the cluster group of the focal tree, } \\ g \in \{\text{tall trees/light wood, high SLA trees, low SLA trees, shrubs, oaks, evergreens, other}\}, \\ \text{ and } m_g \text{ is the biomass of all competitor trees of the specific focal group. Coefficients are with respect to tall trees/light wood}
+$$
 
 Plot all trees in SCBI plot:
 
 ```{r}
+scbi_growth_subset <- scbi_growth_df %>% 
+  filter(stemID %in% focal_vs_comp_scbi_wide$focal_ID)
+
 ggplot(data = scbi_growth_df) +
   geom_sf(aes(col = sp), size = 0.5) +
   labs(title = "All trees in SCBI site")
@@ -127,11 +159,11 @@ ggplot(data = scbi_growth_df) +
   labs(title = "All trees in SCBI site")
 
 ggplot(data = scbi_growth_df) +
-  geom_sf(aes(col = group), size = 0.5) +
+  geom_sf(aes(col = factor(group_alias)), size = 0.5) +
   labs(title = "All trees in SCBI site")
 ```
 
-Plot all the trees (??)
+Plot all the trees, specific species
 
 ```{r}
 ggplot(data = scbi_growth_df %>% filter(sp == "nysy")) +
