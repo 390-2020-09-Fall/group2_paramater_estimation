@@ -146,19 +146,19 @@ Plot all trees in SCBI plot:
 scbi_growth_subset <- scbi_growth_df %>% 
   filter(stemID %in% focal_vs_comp_scbi_wide$focal_ID)
 
-ggplot(data = scbi_growth_df) +
+ggplot(data = scbi_growth_subset) +
   geom_sf(aes(col = sp), size = 0.5) +
   labs(title = "All trees in SCBI site")
 
-ggplot(data = scbi_growth_df) +
+ggplot(data = scbi_growth_subset) +
   geom_sf(aes(col = Genus), size = 0.5) +
   labs(title = "All trees in SCBI site")
 
-ggplot(data = scbi_growth_df) +
+ggplot(data = scbi_growth_subset) +
   geom_sf(aes(col = Family), size = 0.5) +
   labs(title = "All trees in SCBI site")
 
-ggplot(data = scbi_growth_df) +
+ggplot(data = scbi_growth_subset) +
   geom_sf(aes(col = factor(group_alias)), size = 0.5) +
   labs(title = "All trees in SCBI site")
 ```
