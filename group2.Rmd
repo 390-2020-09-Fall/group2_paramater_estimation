@@ -174,21 +174,3 @@ ggplot(data = scbi_growth_df %>% filter(sp == "astr")) +
   geom_sf(aes(col = sp), size = 0.5)+
   labs(title = "All Asimina triloba trees in Michigan Big Woods site")
 ```
-
-
-
-```{r}
-maples <- read_csv("https://rudeboybert.github.io/SDS390/static/data/maples.csv")
-```
-Model loos like this:
-$$
-\begin{eqnarray*}
-y &=& \beta_0 + \beta_{\text{dbh}}\cdot \text{dbh} + \beta_{\text{evergreen_bm}}\cdot \text{evergreen_bm} + \beta_{\text{maple_bm}}\cdot \text{maple_bm} + \beta_{\text{misc_bm}}\cdot \text{misc_bm}\\
-&& + \beta_{\text{oak}}\cdot \text{oak} + \beta_{\text{short_tree}}\cdot \text{short_tree} + \beta_{\text{shrub}}\cdot \text{shrub} + \epsilon
-\end{eqnarray*}
-$$
-
-where 
-
-1. $\text{dbh}$ is the "starting" DBH in 2008
-1. $\text{bm}$ is "biomass" as estimated by the [basal area](https://en.wikipedia.org/wiki/Basal_area). 
