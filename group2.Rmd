@@ -135,6 +135,15 @@ model <- lm(growth ~ dbh + focal_group + high_sla + low_sla + tall_light_wood + 
 
 summary(model)
 ```
+
+## check assumptions
+```{r}
+plot(model, col=c("blue"))
+```
+In `Residuals vs Fitted` plot, we see a megaphone shape appearing, which suggests that variance is increasing. Larger predicted values are associated with larger residuals. The red line in the plot is fairly flat, so the linearity assumption is met. We can see the increasing variance in the `Scale-Location` plot and `Residuals vs Leverage` plot. So this model does not fit the equal variance assumption for linear models. Therefore, this model is not great. 
+
+In `the Normal Q-Q` plot, the linear assumption is not met. 
+
 $$
 y = \beta_0 + \beta_1d_f + \beta_2g_f + \sum_{g=1}^G \beta_{g}m_g + \varepsilon \\
 \text{ where } d_f \text{ is the diameter at breast height of the focal tree, } g_f \text{ is the cluster group of the focal tree, } \\ g \in \{\text{tall trees/light wood, high SLA trees, low SLA trees, shrubs, oaks, evergreens, other}\}, \\ \text{ and } m_g \text{ is the biomass of all competitor trees of the specific focal group. Coefficients are with respect to tall trees/light wood}
