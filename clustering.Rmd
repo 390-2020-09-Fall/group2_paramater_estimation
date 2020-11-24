@@ -1,0 +1,114 @@
+---
+title: "clustering"
+date: "11/23/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Set default behavior for all code chunks here:
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  message = FALSE, 
+  warning = FALSE, 
+  fig.width = 16/2, 
+  fig.height = 9/2
+)
+
+# Run this command only once to install my forestecology package, specifically
+# the "SCBI" branch:
+# devtools::install_github("rudeboybert/forestecology)
+
+# Load all your used packages here:
+library(tidyverse)
+library(broom)
+library(moderndive)
+library(patchwork)
+library(forestecology)
+library(sf)
+library(knitr)
+
+# Set seed value of random number generator here:
+set.seed(76)
+```
+
+```{r}
+# From forestecology package vignette
+# devtools::install_github("rvalavi/blockCV")
+library(blockCV)
+library(sfheaders)
+
+scbi_2013 <- read.csv("data/scbi.stem2.csv") %>% 
+  select(treeID, stemID, sp, quadrat, gx, gy, dbh, date = ExactDate, codes, status) %>%
+  mutate(date = lubridate::mdy(date)) %>%
+  filter(gx < 300, gy > 300, gy < 600)
+
+scbi_2018 <- read.csv("data/scbi.stem3.csv") %>% 
+  select(treeID, stemID, sp, quadrat, gx, gy, dbh, date = ExactDate, codes, status) %>%
+  mutate(date = lubridate::mdy(date),
+         dbh = as.numeric(dbh)) %>%
+  filter(gx < 300, gy > 300, gy < 600)
+
+census_df1 <- scbi_2013 
+census_df2 <- scbi_2018
+id <- "stemID"
+
+spptable <- read.csv("data/scbi.spptable.csv")
+
+scbi_growth_df <- 
+  # Merge both censuses and compute growth:
+  compute_growth(census_df1, census_df2, id) %>%
+  # Convert growth from cm to mm to make result comperable
+  mutate(growth = growth/10,
+             sp = as.factor(sp)) %>% 
+  inner_join(spptable, by = "sp")
+```
+
+```{r}
+# Add spatial information
+cv_fold_size <- 100
+max_dist <- 7.5
+
+scbi_study_region <- 
+ #tibble(x = c(0,400,400,0,0), y = c(0,0,640,640,0)) %>% 
+  tibble(x = c(0,300,300,0,0), y = c(300,300,600,600,3)) %>% 
+  sfc_polygon()
+
+# Add buffer variable to data frame
+scbi_growth_df <- scbi_growth_df %>%
+  add_buffer_variable(direction = "in", size = max_dist, region = scbi_study_region)
+
+scbi_cv_grid <- spatialBlock(
+  speciesData = scbi_growth_df, theRange = 100, yOffset = 0.9999, k = 9, verbose = FALSE)
+
+# Add foldID to data
+scbi_growth_df <- scbi_growth_df %>% 
+  mutate(
+    foldID = scbi_cv_grid$foldID
+  )
+```
+
+```{r}
+library("cluster")
+library("factoextra")
+library("magrittr")
+
+#scbi_growth_df %>%
+#  na.omit() %>%          # Remove missing values (NA)
+#  scale()                # Scale variables
+```
+
+```{r}
+fviz_nbclust(scbi_growth_df, kmeans, method = "gap_stat") #determine optimal number of clusters
+```
+
+```{r}
+#kmeans
+
+set.seed(123)
+km.res <- kmeans(scbi_growth_df, 3, nstart = 25)
+# Visualize
+fviz_cluster(km.res, data = scbi_growth_df,
+             ellipse.type = "convex",
+             palette = "jco",
+             ggtheme = theme_minimal())
+```
